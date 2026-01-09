@@ -108,6 +108,24 @@ Le fichier `spark/jobs/transform_job.py` :
 docker exec $(docker ps -q -f name=data_platform_spark) /opt/spark/bin/spark-submit /opt/spark/jobs/transform_job.py
 ```
 
+## Etape 4 : Jupyter Notebook
+
+### 4.1 Accès
+
+- URL : http://localhost:8888
+- Pas de mot de passe
+
+### 4.2 Volume partagé
+
+Jupyter accède aux données via le volume `./data` monté dans `/home/jovyan/data`.
+
+### 4.3 Notebook d'exploration
+
+Le fichier `notebooks/exploration.ipynb` :
+- Crée une session Spark
+- Lit les données Parquet générées par le job Spark
+- Affiche les données et statistiques
+
 ## Structure du projet
 
 ```
@@ -122,7 +140,8 @@ data-platform/
 ├── data/
 │   ├── input.csv               # Données source
 │   └── output/                 # Résultat Parquet
-├── notebooks/                  # Notebooks Jupyter
+├── notebooks/
+│   └── exploration.ipynb       # Notebook exploration
 └── README.md
 ```
 
