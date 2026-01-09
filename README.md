@@ -182,11 +182,49 @@ python /home/jovyan/ml/train.py
 2. Naviguer dans le bucket `mlflow/artifacts`
 3. Les modèles sont stockés avec leurs métadonnées MLflow
 
+## Etape 6 : Industrialisation (DevOps)
+
+### 6.1 Makefile
+
+Le projet inclut un `Makefile` pour simplifier les opérations :
+
+| Commande | Description |
+|----------|-------------|
+| `make up` | Initialise Swarm, crée les secrets et déploie la stack |
+| `make down` | Arrête la stack |
+| `make status` | Affiche le statut des services |
+| `make logs SERVICE=airflow` | Affiche les logs d'un service |
+| `make clean` | Nettoie tout (stack, volumes, secrets, swarm) |
+
+### 6.2 Démarrage rapide
+
+```bash
+# Cloner le projet et se placer dans le dossier
+git clone https://github.com/Nistro-dev/data-platform && cd data-platform
+
+# Lancer toute la plateforme
+make up
+
+# Vérifier que tout fonctionne
+make status
+```
+
+### 6.3 Arrêt
+
+```bash
+# Arrêter la stack
+make down
+
+# Ou nettoyage complet
+make clean
+```
+
 ## Structure du projet
 
 ```
 data-platform/
 ├── docker-compose.yml
+├── Makefile                    # Commandes DevOps
 ├── airflow/
 │   └── dags/
 │       └── data_pipeline.py    # DAG ETL
@@ -206,9 +244,12 @@ data-platform/
 ## Arrêt
 
 ```bash
+# Via Makefile
+make down
+
 # Mode Compose
 docker compose down
 
-# Mode Swarm
+# Mode Swarm manuel
 docker stack rm data_platform
 ```
