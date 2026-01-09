@@ -86,16 +86,43 @@ docker stack rm data_platform
 docker swarm leave --force
 ```
 
+## Etape 3 : Pipeline Data (Airflow + Spark)
+
+### 3.1 DAG Airflow
+
+Le fichier `airflow/dags/data_pipeline.py` définit un pipeline ETL :
+- **extract** : Extraction des données
+- **transform** : Transformation avec Spark
+- **load** : Chargement des résultats
+
+### 3.2 Job Spark
+
+Le fichier `spark/jobs/transform_job.py` :
+- Lit un fichier CSV (`/data/input.csv`)
+- Supprime les lignes avec des valeurs null
+- Ecrit le résultat en Parquet (`/data/output`)
+
+### 3.3 Tester le job Spark
+
+```bash
+docker exec $(docker ps -q -f name=data_platform_spark) /opt/spark/bin/spark-submit /opt/spark/jobs/transform_job.py
+```
+
 ## Structure du projet
 
 ```
 data-platform/
 ├── docker-compose.yml
 ├── airflow/
-│   └── dags/          # Pipelines Airflow
+│   └── dags/
+│       └── data_pipeline.py    # DAG ETL
 ├── spark/
-│   └── jobs/          # Scripts Spark
-├── notebooks/         # Notebooks Jupyter
+│   └── jobs/
+│       └── transform_job.py    # Job Spark
+├── data/
+│   ├── input.csv               # Données source
+│   └── output/                 # Résultat Parquet
+├── notebooks/                  # Notebooks Jupyter
 └── README.md
 ```
 
