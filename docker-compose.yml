@@ -1,0 +1,106 @@
+services:
+  # =========================================
+  # SERVICE 1 : PostgreSQL
+  # =========================================
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =========================================
+  # SERVICE 2 : Airflow
+  # =========================================
+  airflow:
+    image: apache/airflow:2.7.3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+        airflow scheduler &
+        exec airflow webserver
+      "
+
+  # =========================================
+  # SERVICE 3 : Spark
+  # =========================================
+  spark:
+    image: docker.io/apache/spark:3.5.1-python3
+    environment:
+      - SPARK_MODE=master
+    volumes:
+      - ./spark/jobs:/opt/spark/jobs
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+
+  # =========================================
+  # SERVICE 4 : Jupyter
+  # =========================================
+  jupyter:
+    image: jupyter/pyspark-notebook:latest
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    ports:
+      - "8888:8888"
+    command: start-notebook.sh --NotebookApp.token=''
+
+  # =========================================
+  # SERVICE 5 : MLflow
+  # =========================================
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.9.2
+    volumes:
+      - mlflow_data:/mlflow
+    ports:
+      - "5001:5000"
+    command: >
+      mlflow server
+        --backend-store-uri sqlite:///mlflow/mlflow.db
+        --default-artifact-root /mlflow/artifacts
+        --host 0.0.0.0
+        --port 5000
+
+  # =========================================
+  # SERVICE 6 : MinIO
+  # =========================================
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+
+volumes:
+  postgres_data:
+  minio_data:
+  mlflow_data:
