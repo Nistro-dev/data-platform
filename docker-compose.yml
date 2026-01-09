@@ -61,45 +61,70 @@ services:
   # =========================================
   jupyter:
     image: jupyter/pyspark-notebook:latest
+    depends_on:
+      - mlflow
+      - minio
+    secrets:
+      - minio_access_key
+      - minio_secret_key
     environment:
       - JUPYTER_ENABLE_LAB=yes
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./notebooks:/home/jovyan/work
       - ./data:/home/jovyan/data
+      - ./ml:/home/jovyan/ml
     ports:
       - "8888:8888"
-    command: start-notebook.sh --NotebookApp.token=''
+    command: bash -c "export AWS_ACCESS_KEY_ID=$$(cat /run/secrets/minio_access_key) && export AWS_SECRET_ACCESS_KEY=$$(cat /run/secrets/minio_secret_key) && start-notebook.sh --NotebookApp.token=''"
 
   # =========================================
   # SERVICE 5 : MLflow
   # =========================================
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
+    depends_on:
+      - minio
+    secrets:
+      - minio_access_key
+      - minio_secret_key
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
     volumes:
       - mlflow_data:/mlflow
     ports:
       - "5001:5000"
-    command: >
-      mlflow server
-        --backend-store-uri sqlite:///mlflow/mlflow.db
-        --default-artifact-root /mlflow/artifacts
-        --host 0.0.0.0
-        --port 5000
+    command: bash -c "pip install boto3 && export AWS_ACCESS_KEY_ID=$$(cat /run/secrets/minio_access_key) && export AWS_SECRET_ACCESS_KEY=$$(cat /run/secrets/minio_secret_key) && mlflow server --backend-store-uri sqlite:///mlflow/mlflow.db --default-artifact-root s3://mlflow/artifacts --host 0.0.0.0 --port 5000"
 
   # =========================================
   # SERVICE 6 : MinIO
   # =========================================
   minio:
     image: minio/minio:latest
+    secrets:
+      - minio_access_key
+      - minio_secret_key
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_access_key
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_secret_key
     volumes:
       - minio_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
     command: server /data --console-address ":9001"
+
+# =========================================
+# SECRETS (Docker Swarm)
+# =========================================
+secrets:
+  postgres_password:
+    external: true
+  minio_access_key:
+    external: true
+  minio_secret_key:
+    external: true
 
 volumes:
   postgres_data:

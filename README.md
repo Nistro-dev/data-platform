@@ -126,6 +126,62 @@ Le fichier `notebooks/exploration.ipynb` :
 - Lit les données Parquet générées par le job Spark
 - Affiche les données et statistiques
 
+## Etape 5 : MLOps avec MLflow + MinIO
+
+Tracer et stocker les expériences ML avec les artefacts dans MinIO.
+
+### 5.1 Créer le bucket MinIO
+
+Avant de lancer un entraînement, créer le bucket `mlflow` dans MinIO :
+
+1. Ouvrir MinIO : http://localhost:9001
+2. Se connecter avec les credentials (valeur des secrets `minio_access_key` / `minio_secret_key`)
+3. Créer un bucket nommé `mlflow`
+
+### 5.2 Script d'entraînement
+
+Le fichier `ml/train.py` :
+- Charge le dataset Iris et entraîne un RandomForestClassifier
+- Log les paramètres (`n_estimators`, `random_state`) et métriques (`accuracy`)
+- Sauvegarde le modèle dans MinIO via `mlflow.sklearn.log_model()`
+
+### 5.3 Accès aux interfaces
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| MLflow | http://localhost:5001 | Tracking des expériences ML |
+| MinIO | http://localhost:9001 | Console de stockage S3 |
+
+### 5.4 Volume partagé
+
+Le dossier `./ml` est monté dans Jupyter (`/home/jovyan/ml`) pour permettre l'exécution des scripts d'entraînement depuis les notebooks.
+
+### 5.5 Exécuter un entraînement depuis Jupyter
+
+1. Ouvrir Jupyter : http://localhost:8888
+2. Ouvrir un terminal
+3. Installer les dépendances :
+```bash
+pip install mlflow==2.9.2 boto3
+```
+4. Lancer le script d'entraînement :
+```bash
+python /home/jovyan/ml/train.py
+```
+
+### 5.6 Visualiser les expériences
+
+1. Ouvrir MLflow : http://localhost:5001
+2. Sélectionner l'expérience "mlops-iris"
+3. Consulter les runs, paramètres et métriques
+4. Cliquer sur un run pour voir les artefacts (modèle sauvegardé)
+
+### 5.7 Vérifier les artefacts dans MinIO
+
+1. Ouvrir MinIO : http://localhost:9001
+2. Naviguer dans le bucket `mlflow/artifacts`
+3. Les modèles sont stockés avec leurs métadonnées MLflow
+
 ## Structure du projet
 
 ```
@@ -142,6 +198,8 @@ data-platform/
 │   └── output/                 # Résultat Parquet
 ├── notebooks/
 │   └── exploration.ipynb       # Notebook exploration
+├── ml/
+│   └── train.py                # Script MLflow
 └── README.md
 ```
 
