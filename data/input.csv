@@ -1,0 +1,9 @@
+name,department,salary,years_experience
+Alice,Engineering,75000,5
+Bob,Engineering,80000,7
+Charlie,Sales,60000,3
+Diana,Sales,,4
+Eve,Marketing,55000,
+Frank,Marketing,58000,3
+Grace,HR,50000,4
+Henry,HR,,5

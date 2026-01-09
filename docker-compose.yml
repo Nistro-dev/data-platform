@@ -50,6 +50,7 @@ services:
       - SPARK_MODE=master
     volumes:
       - ./spark/jobs:/opt/spark/jobs
+      - ./data:/data
     ports:
       - "7077:7077"
       - "8081:8080"
